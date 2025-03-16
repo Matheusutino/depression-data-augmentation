@@ -1,0 +1,7 @@
+datasets
+processed_data
+data_augmentation
+results
+.env
+main.ipynb
+__pycache__
