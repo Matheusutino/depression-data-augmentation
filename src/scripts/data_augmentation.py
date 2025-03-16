@@ -1,14 +1,12 @@
 import re
 import os
-import pandas as pd
-import numpy as np
 from src.core.data_augmentation.data_augmentation_pipeline import DataAugmentationPipeline
 from src.core.preprocessing import DataPreprocessor
 from src.core.utils import read_yaml, save_json, merge_dicts
 
 # Configurações e carregamento de dados
 dataset_path = "datasets/instagram"
-augmentor_type = "copy"
+augmentor_type = "eda"
 n = 2
 llm_provider = "openai"
 model = "gpt-4o-mini"

@@ -1,11 +1,12 @@
 import os
 import argparse
 from src.core.utils import save_json, read_json, get_output_path, check_directory_exists, create_directory
-from src.core.data_classifier import DataClassifier
+from src.core.classifier.SIL_classifier import SILDataClassifier
+from src.core.classifier.MIL_classifier import MILDataClassifier
 
-def classifier(train_dataset_path, val_dataset_path, test_dataset_path, embed_name="distiluse-base-multilingual-cased", pooling_type='average', n_trials=50):
+def classifier(train_dataset_path, val_dataset_path, test_dataset_path, type_classifier, embed_name="distiluse-base-multilingual-cased", pooling_type='average', n_trials=50):
     # Output
-    output_path = get_output_path(train_dataset_path, embed_name=embed_name, pooling_type=pooling_type)
+    output_path = get_output_path(train_dataset_path, type_classifier=type_classifier, embed_name=embed_name, pooling_type=pooling_type)
     check_directory_exists(output_path)
     
     # Load data
@@ -14,7 +15,10 @@ def classifier(train_dataset_path, val_dataset_path, test_dataset_path, embed_na
     dataset_test = read_json(test_dataset_path)
     
     # Instantiate the DataClassifier class
-    classifier = DataClassifier(embed_name=embed_name)
+    if type_classifier == "SIL":
+        classifier = SILDataClassifier(embed_name=embed_name)
+    else:
+        classifier = MILDataClassifier(embed_name=embed_name)
     
     # Train and evaluate the model
     result, trials_history = classifier.train_and_evaluate(
@@ -37,8 +41,9 @@ if __name__ == "__main__":
     parser.add_argument("train_dataset_path", type=str, help="Path to the training dataset.")
     parser.add_argument("val_dataset_path", type=str, help="Path to the validation dataset.")
     parser.add_argument("test_dataset_path", type=str, help="Path to the test dataset.")
-    parser.add_argument("--embed_name", type=str, default="distiluse-base-multilingual-cased", help="Embedding model name.")
-    parser.add_argument("--polling_type", type=str, default="average", help="Pooling type to be used.")
+    parser.add_argument("type_classifier", type=str, help="If SIL or MIL.")
+    parser.add_argument("--embed_name", type=str, default="multi-qa-mpnet-base-dot-v1", help="Embedding model name.")
+    parser.add_argument("--pooling_type", type=str, default="average", help="Pooling type to be used.")
     parser.add_argument("--n_trials", type=int, default=50, help="Number of trials for hyperparameter optimization.")
     
     args = parser.parse_args()
@@ -47,7 +52,8 @@ if __name__ == "__main__":
         train_dataset_path=args.train_dataset_path,
         val_dataset_path=args.val_dataset_path,
         test_dataset_path=args.test_dataset_path,
+        type_classifier=args.type_classifier,
         embed_name=args.embed_name,
-        polling_type=args.polling_type,
+        pooling_type=args.pooling_type,
         n_trials=args.n_trials
     )
