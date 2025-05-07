@@ -65,6 +65,25 @@ def check_directory_exists(directory_path: str) -> None:
     if os.path.exists(directory_path):
         raise FileExistsError(f"Directory '{directory_path}' already exists.")
 
+def get_subdirectories(path):
+    """
+    Returns a list of all subdirectories within the given path.
+
+    Args:
+        path (str): The path to the directory to search for subdirectories.
+
+    Returns:
+        list: A list of paths of all subdirectories inside the given path.
+
+    Raises:
+        FileNotFoundError: If the specified path does not exist.
+        NotADirectoryError: If the specified path is not a directory.
+    """
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"The path {path} is not a directory or does not exist.")
+    
+    return [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+
 def str_to_bool(value: str) -> bool:
     """Converts a string representing a boolean value to a boolean.
 
@@ -118,15 +137,36 @@ def get_output_path(train_dataset_path: str, **kwargs) -> str:
     # Extract required elements
     dataset_name = parts[1]  # e.g., 'instagram'
     augmentation_type = parts[2]  # e.g., 'copy'
+    if augmentation_type == "llm":
+        model = parts[3]
+        prompt_name = parts[4]
+        n = parts[5] + "/" 
+    elif augmentation_type == "contextual":
+        model = parts[3]
+        n = parts[4] + "/"
+    else:
+        n = parts[3] + "/"
     filename = os.path.basename(train_dataset_path)  # e.g., 'train_original.json'
     
     # Extract the part after 'train_'
     suffix = filename.replace("train_", "").replace(".json", "")
+
+    if suffix == "original":
+        augmentation_type = "no_augmentation"
+        # Skip adding {n} if suffix is "original"
+        n = ""
     
     # Append kwargs values as additional subdirectories
     kwargs_path = "/".join(str(value) for value in kwargs.values())
     
     # Construct the output path
     if kwargs_path:
-        return f"results/{dataset_name}/{augmentation_type}/{suffix}/{kwargs_path}"
-    return f"results/{dataset_name}/{augmentation_type}/{suffix}"
+        if augmentation_type == "llm":
+            return f"results/{dataset_name}/{augmentation_type}/{suffix}/{model}/{prompt_name}/{n}{kwargs_path}"
+        elif augmentation_type == "contextual":
+            return f"results/{dataset_name}/{augmentation_type}/{suffix}/{model}/{n}{kwargs_path}"
+        else:
+            return f"results/{dataset_name}/{augmentation_type}/{suffix}/{n}{kwargs_path}"
+        
+    return f"results/{dataset_name}/{augmentation_type}/{n}"
+

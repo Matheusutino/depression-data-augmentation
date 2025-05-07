@@ -1,59 +1,48 @@
-import os
-import argparse
-from src.core.utils import save_json, read_json, get_output_path, check_directory_exists, create_directory
-from src.core.classifier.SIL_classifier import SILDataClassifier
-from src.core.classifier.MIL_classifier import MILDataClassifier
+from src.core.classifier.classifier import classifier
+from src.core.utils import get_subdirectories
 
-def classifier(train_dataset_path, val_dataset_path, test_dataset_path, type_classifier, embed_name="distiluse-base-multilingual-cased", pooling_type='average', n_trials=50):
-    # Output
-    output_path = get_output_path(train_dataset_path, type_classifier=type_classifier, embed_name=embed_name, pooling_type=pooling_type)
-    check_directory_exists(output_path)
-    
-    # Load data
-    dataset_train = read_json(train_dataset_path)
-    dataset_val = read_json(val_dataset_path)
-    dataset_test = read_json(test_dataset_path)
-    
-    # Instantiate the DataClassifier class
-    if type_classifier == "SIL":
-        classifier = SILDataClassifier(embed_name=embed_name)
-    else:
-        classifier = MILDataClassifier(embed_name=embed_name)
-    
-    # Train and evaluate the model
-    result, trials_history = classifier.train_and_evaluate(
-        x_train=dataset_train["X"],
-        x_val=dataset_val["X"],
-        x_test=dataset_test["X"],
-        y_train=dataset_train["y"],
-        y_val=dataset_val["y"],
-        y_test=dataset_test["y"],
-        n_trials=n_trials,
-        pooling_type=pooling_type
-    )
-    
-    create_directory(output_path)
-    save_json(os.path.join(output_path, "results.json"), result)
-    save_json(os.path.join(output_path, "trials_history.json"), trials_history)
+dataset_processed_paths = ["processed_data/instagram/llm/gemini-2.0-flash/bdi",
+                           "processed_data/instagram/llm/gemini-2.0-flash/no_bdi",
+                        #    "processed_data/instagram/llm/DeepSeek-R1/no_bdi",
+                           "processed_data/instagram/llm/Llama-4-Maverick-17B-128E-Instruct-FP8/no_bdi",
+                           "processed_data/instagram/llm/Llama-4-Maverick-17B-128E-Instruct-FP8/bdi",
+                           "processed_data/instagram/llm/llama-3.3-70b-instruct/bdi",
+                           "processed_data/instagram/llm/llama-3.3-70b-instruct/no_bdi",
+                           "processed_data/instagram/llm/Mistral-Small-3.1-24B-Instruct-2503/bdi",
+                           "processed_data/instagram/llm/Mistral-Small-3.1-24B-Instruct-2503/no_bdi",
+                            "processed_data/instagram/copy", 
+                            "processed_data/instagram/llm/dolphin3:8b/no_bdi", 
+                            "processed_data/instagram/contextual/bert-base-multilingual-cased",
+                            "processed_data/instagram/contextual/bert-large-portuguese-cased",
+                            "processed_data/instagram/llm/dolphin3:8b/bdi"]
+types_classifier = ["SIL", "MIL"]
+embed_names = ["ibm-granite/granite-embedding-107m-multilingual", "paraphrase-multilingual-mpnet-base-v2", "intfloat/multilingual-e5-base", "distiluse-base-multilingual-cased"]
+poolings_type = ["mean"]
+n_trials = 20
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train and evaluate a data classification model.")
-    parser.add_argument("train_dataset_path", type=str, help="Path to the training dataset.")
-    parser.add_argument("val_dataset_path", type=str, help="Path to the validation dataset.")
-    parser.add_argument("test_dataset_path", type=str, help="Path to the test dataset.")
-    parser.add_argument("type_classifier", type=str, help="If SIL or MIL.")
-    parser.add_argument("--embed_name", type=str, default="multi-qa-mpnet-base-dot-v1", help="Embedding model name.")
-    parser.add_argument("--pooling_type", type=str, default="average", help="Pooling type to be used.")
-    parser.add_argument("--n_trials", type=int, default=50, help="Number of trials for hyperparameter optimization.")
-    
-    args = parser.parse_args()
-    
-    classifier(
-        train_dataset_path=args.train_dataset_path,
-        val_dataset_path=args.val_dataset_path,
-        test_dataset_path=args.test_dataset_path,
-        type_classifier=args.type_classifier,
-        embed_name=args.embed_name,
-        pooling_type=args.pooling_type,
-        n_trials=args.n_trials
-    )
+for dataset_processed_path in dataset_processed_paths:
+    all_subdirectories = get_subdirectories(dataset_processed_path)
+    for subdirectory in all_subdirectories:
+        for type_classifier in types_classifier:
+            for pooling_type in poolings_type:
+                for embed_name in embed_names:
+                    train_original_dataset_path = f"{subdirectory}/train_original.json"
+                    train_augmented_dataset_path = f"{subdirectory}/train_augmented.json"
+                    train_combined_dataset_path = f"{subdirectory}/train_combined.json"
+                    train_paths = [train_original_dataset_path, train_augmented_dataset_path, train_combined_dataset_path]
+                    val_dataset_path = f"{subdirectory}/val_original.json"
+                    test_dataset_path = f"{subdirectory}/test_original.json"
+
+                    for train_path in train_paths:
+                        try:
+                            classifier(
+                                train_dataset_path=train_path,
+                                val_dataset_path=val_dataset_path,
+                                test_dataset_path=test_dataset_path,
+                                type_classifier=type_classifier,
+                                embed_name=embed_name,
+                                pooling_type=pooling_type,
+                                n_trials=n_trials
+                            )
+                        except Exception as e:
+                            print(f"Error processing {train_path} with classifier {type_classifier}: {e}")

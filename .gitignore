@@ -5,3 +5,6 @@ results
 .env
 main.ipynb
 __pycache__
+main.py
+show_data.py
+src/analysis

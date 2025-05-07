@@ -1,99 +1,140 @@
-import re
+import argparse
 import os
 from src.core.data_augmentation.data_augmentation_pipeline import DataAugmentationPipeline
 from src.core.preprocessing import DataPreprocessor
 from src.core.utils import read_yaml, save_json, merge_dicts
 
-# Configurações e carregamento de dados
-dataset_path = "datasets/instagram"
-augmentor_type = "eda"
-n = 2
-llm_provider = "openai"
-model = "gpt-4o-mini"
-temperature = 0.5
-max_output_tokens = 500
-prompt_name = "bdi"
-prompt_file = "configs/prompts.yaml"
-questionnaire_path = "datasets/questionnaire/questionnaire.csv"
+def data_augmentation(dataset_path, 
+                      augmentor_type, 
+                      n, 
+                      llm_provider, 
+                      model, 
+                      model_type,
+                      temperature, 
+                      max_output_tokens, 
+                      prompt_name, 
+                      prompt_file, 
+                      questionnaire_path):
+    # Configurações e carregamento de dados
+    dataset_name = os.path.basename(dataset_path)
+    
+    # Instanciando a classe DataPreprocessor
+    preprocessor = DataPreprocessor(dataset_path, questionnaire_path, dataset_name)
 
-dataset_name = os.path.basename(dataset_path)
+    # Carregando e processando os dados
+    datasets = preprocessor.load_and_preprocess_dataset()
+    questionnaire_filtered = preprocessor.filter_questionnaire_data()
 
-# Instanciando a classe DataPreprocessor
-preprocessor = DataPreprocessor(dataset_path, questionnaire_path, dataset_name)
+    # Agrupando por usuário
+    grouped_datasets = {key: df.groupby("username").agg(list) for key, df in datasets.items()}
 
-# Carregando e processando os dados
-datasets = preprocessor.load_and_preprocess_dataset()
-questionnaire_filtered = preprocessor.filter_questionnaire_data()
+    # Processando os dados
+    processed_data = {
+        key: preprocessor.preprocess_data(grouped_datasets[key], questionnaire_filtered)
+        for key in ["train", "val", "test"]
+    }
 
-# Agrupando por usuário
-grouped_datasets = {key: df.groupby("username").agg(list) for key, df in datasets.items()}
+    # Separando os dados de treinamento
+    train_data = processed_data["train"]
+    X_train = train_data["X"]
+    y_train = train_data["y"]
+    bdi_values_train = train_data["bdi_values"]
+    bdi_forms_train = train_data["bdi_forms"]
+    usernames = train_data["usernames"]
 
-# Processando os dados
-processed_data = {
-    key: preprocessor.preprocess_data(grouped_datasets[key], questionnaire_filtered)
-    for key in ["train", "val", "test"]
-}
+    # Carregar prompts
+    prompt_file_data = read_yaml(prompt_file)
+    system_prompt = prompt_file_data[prompt_name]["system_prompt"]
+    user_prompt = prompt_file_data[prompt_name]["user_prompt"]
 
-# Separando os dados de treinamento
-train_data = processed_data["train"]
-X_train = train_data["X"]
-y_train = train_data["y"]
-bdi_values_train = train_data["bdi_values"]
-bdi_forms_train = train_data["bdi_forms"]
-usernames = train_data["usernames"]
+    # Pipeline de aumento de dados
+    pipeline = DataAugmentationPipeline(
+        augmentor_type=augmentor_type,
+        llm_provider=llm_provider,
+        model=model,
+        model_type=model_type
+    )
 
-# print(bdi_forms_train)
+    # Aumentar os dados
+    train_augmented_all = {
+        "X": [],
+        "y": [],
+        "bdi_values": [],
+        "bdi_forms": [],
+        "usernames": []
+    }
 
-# Carregar prompts
-prompt_file_data = read_yaml(prompt_file)
-system_prompt = prompt_file_data[prompt_name]["system_prompt"]
-user_prompt = prompt_file_data[prompt_name]["user_prompt"]
+    for i in range(1, n + 1):
+        train_augmented = pipeline.augment_data(
+            X_train,
+            y_train,
+            BDI_forms=bdi_forms_train,
+            BDI_values=bdi_values_train,
+            usernames=usernames,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            social_media = dataset_name
+        )
 
-# Pipeline de aumento de dados
-pipeline = DataAugmentationPipeline(
-    augmentor_type=augmentor_type,
-    llm_provider=llm_provider,
-    model=model
-)
+        for key, value in train_augmented.items():
+            # Para adicionar as novas instâncias, você pode atualizar diretamente o dicionário
+            train_augmented_all[key].extend(value)
 
-# Aumentar os dados
-train_augmented = pipeline.augment_data(
-    X_train,
-    y_train,
-    BDI_forms=bdi_forms_train,
-    BDI_values=bdi_values_train,
-    usernames=usernames,
-    n=n,
-    system_prompt=system_prompt,
-    user_prompt=user_prompt,
-    temperature=temperature,
-    max_output_tokens=max_output_tokens,
-    min_num_posts=2,
-    max_num_posts=4
-)
+        # Combinando os dados originais com os aumentados
+        train_combined = merge_dicts(train_data, train_augmented_all)
+        
+        # Função para salvar os dados
+        if augmentor_type == "llm":
+            model = model.split("/", 1)[1] if "/" in model else model
+            output_path = f"processed_data/{dataset_name}/{augmentor_type}/{model}/{prompt_name}/{i}"
+        elif augmentor_type == "contextual":
+            model = model.split("/", 1)[1] if "/" in model else model
+            output_path = f"processed_data/{dataset_name}/{augmentor_type}/{model}/{i}"
+        else:
+            output_path = f"processed_data/{dataset_name}/{augmentor_type}/{i}"
 
-# Combinando os dados originais com os aumentados
-train_combined = merge_dicts(train_data, train_augmented)
+        # Criar diretório se não existir
+        os.makedirs(output_path, exist_ok=True)
 
-# Função para salvar os dados
-output_path = f"processed_data/{dataset_name}/{augmentor_type}"
+        # Salvar os dicionários processados
+        save_json(f"{output_path}/train_original.json", train_data)
+        save_json(f"{output_path}/train_augmented.json", train_augmented_all)
+        save_json(f"{output_path}/train_combined.json", train_combined)
+        save_json(f"{output_path}/val_original.json", processed_data["val"])
+        save_json(f"{output_path}/test_original.json", processed_data["test"])
 
-# Criar diretório se não existir
-os.makedirs(output_path, exist_ok=True)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Data Augmentation Pipeline")
 
-# Salvar os dicionários processados
-save_json(f"{output_path}/train_original.json", train_data)
-save_json(f"{output_path}/train_augmented.json", train_augmented)
-save_json(f"{output_path}/train_combined.json", train_combined)
-save_json(f"{output_path}/val.json", processed_data["val"])
-save_json(f"{output_path}/test.json", processed_data["test"])
+    # Definindo os parâmetros a serem passados pela linha de comando
+    parser.add_argument("dataset_path", type=str, help="Caminho para o dataset")
+    parser.add_argument("augmentor_type", type=str, choices=["copy", "contextual", "llm"], help="Tipo de augmentor a ser utilizado")
+    parser.add_argument("--n", type=int, default=5, help="Número de aumentos de dados")
+    parser.add_argument("--llm_provider", type=str, help="Fornecedor de LLM (ex: openai)")
+    parser.add_argument("--model", type=str, help="Modelo LLM (ex: gpt-4o-mini)")
+    parser.add_argument("--model_type", type=str, help="Modelo para o augmentor contextual (ex: 'BERT')")
+    parser.add_argument("--temperature", type=float, default=0.5, help="Temperatura para geração do modelo")
+    parser.add_argument("--max_output_tokens", type=int, default= 16384, help="Máximo de tokens de saída")
+    parser.add_argument("--prompt_name", type=str, default = "no_bdi", help="Nome do prompt")
+    parser.add_argument("--prompt_file", type=str, default="configs/prompts.yaml", help="Caminho para o arquivo de prompts YAML")
+    parser.add_argument("--questionnaire_path", type=str, default="datasets/questionnaire/questionnaire.csv", help="Caminho para o arquivo do questionário")
 
-# # Exibir estatísticas
-# total_samples = len(X_train)
-# total_augmented = len(new_X)
-# label_distribution = dict(zip(*np.unique(new_y, return_counts=True)))
+    # Parse dos argumentos
+    args = parser.parse_args()
 
-# print(f"Total samples: {total_samples}")
-# print(f"Total augmented samples: {total_augmented}")
-# print("Label distribution:", label_distribution)
-
+    # Chama a função de aumento de dados com os parâmetros fornecidos
+    data_augmentation(
+        args.dataset_path,
+        args.augmentor_type,
+        args.n,
+        args.llm_provider,
+        args.model,
+        args.model_type,
+        args.temperature,
+        args.max_output_tokens,
+        args.prompt_name,
+        args.prompt_file,
+        args.questionnaire_path
+    )

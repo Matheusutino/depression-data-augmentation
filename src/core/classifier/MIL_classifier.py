@@ -5,21 +5,20 @@ import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sentence_transformers import SentenceTransformer
-import random
 
 
 class MILDataClassifier:
-    def __init__(self, embed_name, random_seed=42, device="cuda"):
+    def __init__(self, embed_name, random_seed=42, device="cpu"):
         """Inicializa a classe MIL com o nome do modelo de embedding e uma seed"""
         self.embed_name = embed_name
-        self.model = SentenceTransformer(embed_name)
+        self.model = SentenceTransformer(embed_name, trust_remote_code=True)
         self.scaler = StandardScaler()
         self.random_seed = random_seed
         self.device = device
     
-    def generate_embeddings(self, posts):
+    def generate_embeddings(self, posts, batch_size = 8):
         """Gera embeddings para os posts de um usuário usando o modelo especificado"""
-        return self.model.encode(posts)
+        return self.model.encode(posts, batch_size=batch_size, show_progress_bar=True)
 
     def apply_pooling(self, embeddings, pooling_type):
         """Aplica pooling sobre as embeddings geradas"""
@@ -27,7 +26,7 @@ class MILDataClassifier:
             return np.max(embeddings, axis=0)
         elif pooling_type == 'min':
             return np.min(embeddings, axis=0)
-        elif pooling_type == 'average':
+        elif pooling_type == 'mean':
             return np.mean(embeddings, axis=0)
         elif pooling_type == 'sum':
             return np.sum(embeddings, axis=0)

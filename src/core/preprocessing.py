@@ -7,6 +7,18 @@ class DataPreprocessor:
         self.questionnaire_path = questionnaire_path
         self.dataset_name = dataset_name
 
+    def preprocess_usernames(self, series):
+        usernames = []
+        for x in series:
+            if isinstance(x, str):  # Check if it's a string
+                # Remove all '@', strip spaces, and convert to lowercase
+                username = x.strip().replace('@', '').lower()
+                usernames.append(username)
+            else:
+                # If not a string, append an empty string (or we can choose another action)
+                usernames.append('')
+        return usernames
+
     def process_tweet(self, text):
         """Replaces mentions (@user) with @USERNAME."""
         return re.sub(r'@\w+', '@USERNAME', text)
@@ -37,10 +49,20 @@ class DataPreprocessor:
         
         for username, group in grouped_df.iterrows():
             captions = group['caption']
-            bdi_questionnaire = questionnaire_filtered[questionnaire_filtered[f'Nome de usuário do {self.dataset_name.title()}'] == username]
-            bdi_questionnaire = bdi_questionnaire.drop(columns=[f'Nome de usuário do {self.dataset_name.title()}'])
+            # Apply preprocessing to 'username' and the relevant column in your dataframe
+            username_processed = self.preprocess_usernames([username])[0]  # Assuming 'username' is a single value
+            column_name_processed = f'Nome de usuário do {self.dataset_name.title()}'
 
-            print(bdi_questionnaire)
+            # Apply preprocessing to the 'Nome de usuário' column in the DataFrame
+            questionnaire_filtered[column_name_processed] = self.preprocess_usernames(questionnaire_filtered[column_name_processed])
+
+            # Filtering the dataframe based on processed username
+            bdi_questionnaire = questionnaire_filtered[questionnaire_filtered[column_name_processed] == username_processed]
+
+            # Drop the column after filtering
+            bdi_questionnaire = bdi_questionnaire.drop(columns=[column_name_processed])
+
+            #print(bdi_questionnaire)
 
             bdi_form = '\n'.join([
                 f"{col.split('. ', 1)[1] if '. ' in col else col}: {row[col]}"

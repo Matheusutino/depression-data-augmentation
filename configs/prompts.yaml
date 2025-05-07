@@ -1,42 +1,107 @@
-bdi:
+no_bdi:
   user_prompt: |
-    Você tem um conjunto de posts de um usuário em uma rede social, e seu objetivo é gerar novos posts para data augmentation, simulando o comportamento observado nos dados originais. Além disso, você deve estruturar a saída de forma que seja possível extrair os novos posts utilizando regex.
+    Você receberá um conjunto de posts de um usuário do {social_media} e seu objetivo é gerar novos posts que simulem seu estilo e comportamento, mantendo coerência com os dados originais. Além disso, a saída deve ser formatada de maneira estruturada para facilitar a extração posterior via regex.
+    Entrada:
 
-    Entrada: Um conjunto de posts de um usuário em uma rede social (uma lista de posts) e o formulário BDI preenchido pelo usuário.
+    - Uma lista de posts do usuário no {social_media}.
 
-    Objetivo: Gerar novos posts que simulem o comportamento original, com base nos dados fornecidos, e formatá-los de forma estruturada para facilitar a extração posterior.
+    Objetivo:
+
+    - Criar exatamente {num_posts} novos posts que imitem o estilo, tom e temas dos posts originais.
+    - Estruturar os posts gerados com delimitadores específicos para facilitar a extração via regex.
 
     Instruções:
 
     1. Análise do Comportamento Original:
-    - Examine os posts fornecidos para identificar o estilo de escrita, temas recorrentes, emoções predominantes e a frequência com que o usuário publica sobre certos tópicos.
-    - Considere o formulário BDI para ajustar os posts com base no estado emocional do usuário (e.g., mais otimistas ou mais negativos, dependendo das pontuações no BDI).
 
-    2. Simulação de Novos Posts:
-    - Gere novos posts que imitam a voz, o estilo e os temas dos posts originais.
-    - Mantenha a coerência emocional com base no formulário BDI: o tom pode variar entre mais depressivo, neutro ou positivo, dependendo da análise dos dados.
-    - Crie entre {min_num_posts} e {max_num_posts} novos posts que diversifiquem o estilo e os temas, mas que ainda soem autênticos e como se fossem feitos pelo mesmo usuário.
+    - Identifique o estilo de escrita, temas recorrentes e emoções predominantes nos posts fornecidos.
+    - Observe os tópicos mais falados e como eles se relacionam.
+
+    2. Geração de Novos Posts:
+            
+    - Produza novos posts que pareçam autênticos e coerentes com o comportamento original.
+    - Mantenha a diversidade dentro dos temas e padrões observados.
+    - Importante notar que todos os posts pertencem a um único usuário, então os posts apresentam correlação entre si e não devem ser tratados como elementos isolados.
+    - Sinta-se livre para alterar nome de pessoas, locais, objetos e afins, visando uma maior diversidade durante a geração.
+    - Os posts são do {social_media}, então provavelmente são mais informais e descontraidos, considere isso quando for gerar os dados.
+    
 
     3. Estruturação para Regex:
-    - Formate os posts gerados de forma que cada novo post seja uma entrada separada, com delimitadores claros para facilitar a extração via regex. Cada post deve estar entre delimitadores específicos, como {{Post}} e {{/Post}}. Isso permitirá que você use regex para capturar os posts facilmente. Exemplo de estrutura:
 
-    {{Post}}
-    Este é o primeiro novo post gerado, com base no comportamento observado.
-    {{/Post}}
+    - Formate cada novo post dentro de delimitadores claros, como {{Post}} e {{/Post}}, para permitir fácil extração.
+    - Exemplo de estrutura:
 
-    Dessa forma, abaixo encontra-se o formulário BDI do usuário e também os posts originais:
+        {{Post}}
+        Este é um exemplo de novo post gerado, mantendo o estilo original.
+        {{/Post}}
+
+    Abaixo estão os posts originais:
+
+    {original_posts}
+
+    Gere os novos posts seguindo as diretrizes acima.
+
+  system_prompt: |
+    Você é um modelo de linguagem avançado com expertise em analisar comportamentos e gerar conteúdos realistas para data augmentation, ajustando os posts com base em estados emocionais observados. Seu objetivo é produzir posts que reflitam os mesmos padrões de estilo, tom e temas dos dados originais. Além disso, a estrutura dos posts gerados deve ser organizada para facilitar a extração através de regex, permitindo a automação na coleta de novos conteúdos. Lembre-se de manter a autenticidade e coerência emocional dos posts ao gerar novos conteúdos.
+
+bdi:
+  user_prompt: |
+    Você receberá um conjunto de posts de um usuário do {social_media} e seu objetivo é gerar novos posts que simulem seu estilo e comportamento, mantendo coerência com os dados originais. Além disso, a saída deve ser formatada de maneira estruturada para facilitar a extração posterior via regex.
+
+    Entrada:
+
+    - Uma lista de posts do usuário no {social_media}.
+    - Um formulário BDI preenchido pelo usuário, que indica seu estado emocional.
+
+    Objetivo:
+
+    - Criar exatamente {num_posts} novos posts que imitem o estilo, tom e temas dos posts originais.
+    - Ajustar o tom dos posts com base no valor do BDI, refletindo um estado emocional mais otimista, neutro ou depressivo, conforme apropriado.
+    - Estruturar os posts gerados com delimitadores específicos para facilitar a extração via regex.
+
+    Instruções:
+
+    1. Análise do Comportamento Original:
+
+    - Identifique o estilo de escrita, temas recorrentes e emoções predominantes nos posts fornecidos.
+    - Observe os tópicos mais falados e como eles se relacionam.
+    - Utilize o valor e o formulário BDI para ajustar o tom emocional dos novos posts.
+
+    2. Geração de Novos Posts:
+            
+    - Produza novos posts que pareçam autênticos e coerentes com o comportamento original.
+    - Mantenha a diversidade dentro dos temas e padrões observados.
+    - Importante notar que todos os posts pertencem a um único usuário, então os posts apresentam correlação entre si e não devem ser tratados como elementos isolados.
+    - Sinta-se livre para alterar nome de pessoas, locais, objetos e afins, visando uma maior diversidade durante a geração.
+    - Os posts são do {social_media}, então provavelmente são mais informais e descontraidos, considere isso quando for gerar os dados.
+    - Ajuste a linguagem e a tonalidade considerando também o formulário BDI.
+    
+
+    3. Estruturação para Regex:
+
+    - Formate cada novo post dentro de delimitadores claros, como {{Post}} e {{/Post}}, para permitir fácil extração.
+    - Exemplo de estrutura:
+
+        {{Post}}
+        Este é um exemplo de novo post gerado, mantendo o estilo original.
+        {{/Post}}
+
+    Abaixo estão o formulário BDI do usuário e os posts originais:
 
     Formulário BDI:
 
     {BDI_form}
 
-    Sabendo que o valor de BDI para esse formulário é : {BDI_value}
+    Valor do BDI:
+
+    {BDI_value}
 
     Posts Originais:
 
     {original_posts}
 
-    Forneça a resposta no formato estruturado conforme descrito acima, com os novos posts gerados e formatados para regex.
+    Gere os novos posts seguindo as diretrizes acima.
 
   system_prompt: |
     Você é um modelo de linguagem avançado com expertise em analisar comportamentos e gerar conteúdos realistas para data augmentation, ajustando os posts com base em estados emocionais observados no formulário BDI. Seu objetivo é produzir posts que reflitam os mesmos padrões de estilo, tom e temas dos dados originais, considerando as variações emocionais definidas pelo valor do BDI. Além disso, a estrutura dos posts gerados deve ser organizada para facilitar a extração através de regex, permitindo a automação na coleta de novos conteúdos. Lembre-se de manter a autenticidade e coerência emocional dos posts ao gerar novos conteúdos.
+

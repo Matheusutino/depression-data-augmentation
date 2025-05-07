@@ -5,20 +5,19 @@ import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sentence_transformers import SentenceTransformer
-import random
 
 class SILDataClassifier:
-    def __init__(self, embed_name, random_seed=42, device="cuda"):
+    def __init__(self, embed_name, random_seed=42, device="cpu"):
         """Inicializa a classe SIL com o nome do modelo de embedding e uma seed"""
         self.embed_name = embed_name
-        self.model = SentenceTransformer(embed_name)
+        self.model = SentenceTransformer(embed_name, trust_remote_code=True)
         self.scaler = StandardScaler()
         self.random_seed = random_seed
         self.device = device
 
-    def generate_embeddings(self, posts):
+    def generate_embeddings(self, posts, batch_size = 8):
         """Gera embeddings para os posts de um usuário usando o modelo especificado"""
-        return self.model.encode(posts)
+        return self.model.encode(posts, batch_size=batch_size, show_progress_bar=True)
 
     def prepare_data(self, X, y):
         """Prepara os dados para o formato SIL"""
@@ -92,29 +91,33 @@ class SILDataClassifier:
         """Previsão por classe majoritária para cada conjunto de posts"""
         y_pred_majority = []
         
-        # Para cada conjunto de posts (cada instância)
+        # Gerar embeddings para todos os posts de uma vez (assumindo que X seja uma lista de listas de posts)
+        all_posts = [post for posts in X for post in posts]
+        post_embeds = self.generate_embeddings(all_posts)
+        
+        # Normalizar os embeddings (em lote)
+        post_embeds_pool = self.scaler.transform(post_embeds)
+        
+        # Converter para DMatrix em lote antes de passar para o modelo
+        dmatrix = xgb.DMatrix(post_embeds_pool)
+        
+        # Fazer a previsão para todos os posts de uma vez
+        post_preds = clf.predict(dmatrix)
+        
+        # Converter as probabilidades para 0 ou 1
+        post_labels = (post_preds > 0.5).astype(int)
+        
+        # Agora, vamos agrupar as previsões por conjunto de posts
+        idx = 0
         for posts in X:
-            # Gerar embeddings para os posts (espera-se que 'posts' seja uma lista de strings)
-            post_embeds = self.generate_embeddings(posts)
-            
-            # Normalizar os embeddings (garante que 'post_embeds' esteja no formato esperado)
-            post_embeds_pool = self.scaler.transform(post_embeds)
-            
-            # Converter para DMatrix antes de passar para o modelo
-            dmatrix = xgb.DMatrix(post_embeds_pool)
-            
-            # Fazer a previsão para cada post
-            post_preds = clf.predict(dmatrix)
-            
-            # Converter as probabilidades para 0 ou 1
-            post_labels = (post_preds > 0.5).astype(int)
-            
-            # Obter a label majoritária (classe mais frequente)
-            majority_label = np.bincount(post_labels).argmax()
-            
+            n_posts = len(posts)
+            post_labels_subset = post_labels[idx:idx + n_posts]
+            majority_label = np.bincount(post_labels_subset).argmax()
             y_pred_majority.append(majority_label)
+            idx += n_posts
         
         return y_pred_majority
+
 
 
     def train_and_evaluate(self, x_train, x_val, x_test, y_train, y_val, y_test, n_trials=50, **kwargs):
