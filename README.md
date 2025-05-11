@@ -19,10 +19,15 @@ All models are trained on multilingual sentence embeddings and evaluated using a
 
 ## 🔍 Key Findings
 
-- 🥇 MIL consistently outperforms SIL in all augmentation scenarios
-- 🧠 LLM-based augmentation without BDI-II modulation achieves the best F1-scores
-- ⚡ Contextual BERT substitution offers a strong performance–efficiency tradeoff
-- ⚠️ Synthetic generation with BDI-II introduces stylistic divergence and reduces performance
+- 🥇 MIL consistently outperforms SIL across all data augmentation strategies, confirming that leveraging user-level information enhances performance.
+
+- 🧠 Among LLMs, Dolphin 3 surpasses larger models, indicating that compact architectures can yield high-quality synthetic data with lower computational overhead.
+
+- 📈 For both LLM-based and Contextual (BERT) augmentation, the best F1-scores are achieved with an augmentation factor of $n = 1$, suggesting that excessive synthetic data may introduce noise and degrade performance.
+
+- ⚡ Contextual BERT substitution provides an effective balance between performance and efficiency.
+
+- ⚠️ Incorporating BDI-II modulation into synthetic generation leads to stylistic inconsistencies and harms model accuracy.
 
 ## 📊 Dataset
 
@@ -48,7 +53,7 @@ The experiments use a real Instagram dataset with BDI-II clinical annotations, c
 ## 📎 Supplementary Materials
 
 - [Prompt examples used for data generation](./supplementary_texts/prompts.pdf)
-- XGBoost hyperparameter search space
+- [Best XGBoost hyperparameter for each model](./supplementary_texts/hyperparameters.pdf)
 - [Evaluation plots and similarity metrics (cosine similarity, Hausdorff distance, etc.)](./supplementary_texts/similarity.pdf)
 
 ## 🔬 Citation
