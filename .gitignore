@@ -3,8 +3,6 @@ processed_data
 data_augmentation
 results
 .env
-main.ipynb
 __pycache__
 main.py
-show_data.py
 src/analysis
