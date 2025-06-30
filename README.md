@@ -1,6 +1,6 @@
 # Synthetic Data for Mental Health: A Comparative Analysis of LLMs, BERT, and Copy-Based Augmentation
 
-This repository includes the source code, augmentation templates, and experimental configurations for the paper **"Synthetic Data for Mental Health: A Comparative Analysis of LLMs, BERT, and Copy-Based Augmentation"**, submitted to BRACIS 2025.
+This repository includes the source code, augmentation templates, and experimental configurations for the paper **"Synthetic Data for Mental Health: A Comparative Analysis of LLMs, BERT, and Copy-Based Augmentation"**, approved to BRACIS 2025.
 
 ## 🧠 Overview
 
@@ -58,7 +58,7 @@ The experiments use a real Instagram dataset with BDI-II clinical annotations, c
 
 ## 🔬 Citation
 
-Coming soon (after peer review).
+Coming soon.
 
 ## 📄 License
 
@@ -67,5 +67,5 @@ This project is licensed under the MIT License.
 ## 📬 Contact
 
 For questions or collaboration inquiries, please contact:  
-[REMOVED FOR DOUBLE BLIND REVIEW]
+matheusutino@usp.br
 
