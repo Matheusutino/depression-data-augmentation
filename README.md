@@ -58,7 +58,21 @@ The experiments use a real Instagram dataset with BDI-II clinical annotations, c
 
 ## 🔬 Citation
 
-Coming soon.
+```bibtex
+@inproceedings{utino2025synthetic,
+ author = {Matheus Utino and Elton Matsushima and Aline Paes and Paulo Mann},
+ title = { Synthetic Data for Mental Health: A Comparative Analysis of LLMs, BERT, and Copy-Based Augmentation},
+ booktitle = {Anais da XXXV Brazilian Conference on Intelligent Systems},
+ location = {Fortaleza/CE},
+ year = {2025},
+ keywords = {},
+ issn = {2643-6264},
+ pages = {393--408},
+ publisher = {SBC},
+ address = {Porto Alegre, RS, Brasil},
+ url = {https://sol.sbc.org.br/index.php/bracis/article/view/40872}
+}
+```
 
 ## 📄 License
 
